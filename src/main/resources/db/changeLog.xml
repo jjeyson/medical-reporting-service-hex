@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:mongodb="http://www.liquibase.org/xml/ns/mongodb"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd
+        http://www.liquibase.org/xml/ns/mongodb
+        http://www.liquibase.org/xml/ns/mongodb/liquibase-mongodb-latest.xsd">
+
+    <!-- createIndexes crea la colección cuando aún no existe y es idempotente
+         cuando ya encuentra el mismo nombre, claves y opciones. -->
+    <changeSet id="001-consultation-indexes" author="indra">
+        <mongodb:runCommand>
+            <mongodb:command><![CDATA[
+            {
+              "createIndexes": "consultation_view",
+              "indexes": [
+                {
+                  "key": { "patientId": 1, "consultationDate": -1, "_id": -1 },
+                  "name": "idx_consultation_patient_date"
+                },
+                {
+                  "key": { "doctorId": 1, "consultationDate": -1, "_id": -1 },
+                  "name": "idx_consultation_doctor_date"
+                },
+                {
+                  "key": { "status": 1, "consultationDate": -1, "_id": -1 },
+                  "name": "idx_consultation_status_date"
+                },
+                {
+                  "key": { "diagnoses.icd10Code": 1 },
+                  "name": "idx_diagnosis_icd10"
+                },
+                {
+                  "key": { "consultationDate": -1, "_id": -1 },
+                  "name": "idx_consultation_date_id"
+                }
+              ]
+            }
+            ]]></mongodb:command>
+        </mongodb:runCommand>
+    </changeSet>
+
+    <changeSet id="002-patient-indexes" author="indra">
+        <mongodb:runCommand>
+            <mongodb:command><![CDATA[
+            {
+              "createIndexes": "patient_view",
+              "indexes": [
+                {
+                  "key": { "dni": 1 },
+                  "name": "dni_1"
+                }
+              ]
+            }
+            ]]></mongodb:command>
+        </mongodb:runCommand>
+    </changeSet>
+
+    <changeSet id="003-consultation-validator" author="indra">
+        <mongodb:runCommand>
+            <mongodb:command><![CDATA[
+            {
+              "collMod": "consultation_view",
+              "validator": {
+                "$jsonSchema": {
+                  "bsonType": "object",
+                  "required": ["_id"],
+                  "properties": {
+                    "_id": { "bsonType": "string" },
+                    "appointmentId": { "bsonType": ["string", "null"] },
+                    "patientId": { "bsonType": ["string", "null"] },
+                    "patientName": { "bsonType": ["string", "null"] },
+                    "doctorId": { "bsonType": ["string", "null"] },
+                    "consultationDate": { "bsonType": ["date", "null"] },
+                    "reason": { "bsonType": ["string", "null"] },
+                    "status": { "enum": ["IN_PROGRESS", "COMPLETED", "CANCELLED"] },
+                    "diagnoses": { "bsonType": "array" },
+                    "prescriptions": { "bsonType": "array" },
+                    "attachments": { "bsonType": "array" },
+                    "createdAt": { "bsonType": ["date", "null"] },
+                    "lastUpdatedAt": { "bsonType": ["date", "null"] },
+                    "patientUpdatedAt": { "bsonType": ["date", "null"] }
+                  }
+                }
+              },
+              "validationLevel": "moderate",
+              "validationAction": "warn"
+            }
+            ]]></mongodb:command>
+        </mongodb:runCommand>
+    </changeSet>
+
+    <changeSet id="004-patient-validator" author="indra">
+        <mongodb:runCommand>
+            <mongodb:command><![CDATA[
+            {
+              "collMod": "patient_view",
+              "validator": {
+                "$jsonSchema": {
+                  "bsonType": "object",
+                  "required": ["_id"],
+                  "properties": {
+                    "_id": { "bsonType": "string" },
+                    "dni": { "bsonType": ["string", "null"] },
+                    "fullName": { "bsonType": ["string", "null"] },
+                    "lastUpdatedAt": { "bsonType": ["date", "null"] }
+                  }
+                }
+              },
+              "validationLevel": "moderate",
+              "validationAction": "warn"
+            }
+            ]]></mongodb:command>
+        </mongodb:runCommand>
+    </changeSet>
+
+    <changeSet id="005-appointment-indexes" author="indra">
+        <mongodb:runCommand>
+            <mongodb:command><![CDATA[
+            {
+              "createIndexes": "appointment_view",
+              "indexes": [
+                {
+                  "key": { "patientId": 1, "appointmentDateTime": -1, "_id": -1 },
+                  "name": "idx_appointment_patient_date"
+                },
+                {
+                  "key": { "doctorId": 1, "appointmentDateTime": -1, "_id": -1 },
+                  "name": "idx_appointment_doctor_date"
+                },
+                {
+                  "key": { "status": 1, "appointmentDateTime": -1, "_id": -1 },
+                  "name": "idx_appointment_status_date"
+                }
+              ]
+            }
+            ]]></mongodb:command>
+        </mongodb:runCommand>
+    </changeSet>
+
+    <changeSet id="006-appointment-validator" author="indra">
+        <mongodb:runCommand>
+            <mongodb:command><![CDATA[
+            {
+              "collMod": "appointment_view",
+              "validator": {
+                "$jsonSchema": {
+                  "bsonType": "object",
+                  "required": ["_id"],
+                  "properties": {
+                    "_id": { "bsonType": "string" },
+                    "patientId": { "bsonType": ["string", "null"] },
+                    "doctorId": { "bsonType": ["string", "null"] },
+                    "specialty": { "bsonType": ["string", "null"] },
+                    "appointmentDateTime": { "bsonType": ["date", "null"] },
+                    "reason": { "bsonType": ["string", "null"] },
+                    "status": {
+                      "enum": ["PENDING", "CONFIRMED", "RESCHEDULED", "CANCELLED", "ATTENDED"]
+                    },
+                    "cancellationReason": { "bsonType": ["string", "null"] },
+                    "createdAt": { "bsonType": ["date", "null"] },
+                    "lastUpdatedAt": { "bsonType": ["date", "null"] }
+                  }
+                }
+              },
+              "validationLevel": "moderate",
+              "validationAction": "warn"
+            }
+            ]]></mongodb:command>
+        </mongodb:runCommand>
+    </changeSet>
+
+</databaseChangeLog>
